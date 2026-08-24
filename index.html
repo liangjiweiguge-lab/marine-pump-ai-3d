@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#071017">
+<title>船舶离心泵 AI·3D 智能虚拟实训 V2</title>
+<style>
+:root{--bg:#071017;--panel:rgba(11,24,34,.88);--line:#244452;--txt:#eef8fb;--muted:#8fb0bd;--ok:#49d7a4;--warn:#ffc857;--bad:#ff6678;--accent:#5bd8ff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:radial-gradient(circle at 50% 25%,#16303b 0,#071017 60%);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+button{font:inherit;color:inherit}
+#app{height:100%;display:grid;grid-template-rows:auto 1fr auto}
+header{padding:max(8px,env(safe-area-inset-top)) 12px 8px;display:flex;align-items:center;gap:10px;background:linear-gradient(#08151ddd,transparent);z-index:5}
+.brand{font-weight:800;font-size:15px;letter-spacing:.5px}.sub{font-size:11px;color:var(--muted)}
+.status{margin-left:auto;display:flex;gap:6px;align-items:center;font-size:11px}
+.pill{border:1px solid var(--line);border-radius:999px;padding:5px 8px;background:#0a1820cc}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:5px;box-shadow:0 0 12px var(--ok)}
+main{position:relative;min-height:0}
+canvas{width:100%;height:100%;display:block;touch-action:none;-webkit-user-select:none;user-select:none}
+.hud{position:absolute;left:10px;top:8px;display:grid;gap:6px;pointer-events:none}
+.metric{min-width:118px;background:#081821c9;border:1px solid #1f3a47;border-radius:12px;padding:7px 9px;backdrop-filter:blur(12px)}
+.metric b{font-size:16px}.metric small{display:block;color:var(--muted);font-size:10px}
+#task{position:absolute;right:10px;top:8px;width:min(43vw,300px);background:#081821d9;border:1px solid #294958;border-radius:14px;padding:10px;backdrop-filter:blur(14px)}
+#task h3{margin:0 0 5px;font-size:12px;color:var(--accent)}#task p{margin:0;font-size:12px;line-height:1.45}
+#toast{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:#0b1d27e8;border:1px solid #315463;padding:8px 12px;border-radius:999px;font-size:12px;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap}
+nav{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;padding:7px 7px max(7px,env(safe-area-inset-bottom));background:#07131ae8;border-top:1px solid #17303a;z-index:8}
+nav button,.btn{border:1px solid #244653;background:#0b202a;border-radius:11px;padding:8px 4px;font-size:11px;min-height:42px}
+nav button:active,.btn:active{transform:scale(.97);background:#12313d}
+.drawer{position:absolute;left:8px;right:8px;bottom:8px;max-height:62%;overflow:auto;background:#081821f5;border:1px solid #2a4b59;border-radius:18px;padding:12px;backdrop-filter:blur(18px);transform:translateY(115%);transition:.28s cubic-bezier(.2,.8,.2,1);z-index:7}
+.drawer.open{transform:none}.drawer h2{font-size:15px;margin:0 0 8px}.drawer .close{float:right;background:none;border:0;font-size:20px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.card{border:1px solid #244653;border-radius:12px;padding:9px;background:#0b202a}.card b{font-size:12px}.card p{font-size:10px;color:var(--muted);margin:4px 0 0}
+.row{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.slider{width:100%}
+.evidence{display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #1d3641;font-size:12px}
+.bad{color:var(--bad)}.ok{color:var(--ok)}.warn{color:var(--warn)}
+#intro{position:fixed;inset:0;z-index:20;background:radial-gradient(circle at 50% 35%,#193b48,#050b0f 70%);display:grid;place-items:center;padding:24px;text-align:center}
+#intro .hero{max-width:560px}#intro h1{font-size:clamp(25px,7vw,48px);margin:0 0 8px}#intro p{color:#a8c1cb;line-height:1.6;font-size:13px}
+#intro button{border:1px solid #4b8fa5;background:#103546;border-radius:14px;padding:13px 24px;font-weight:700}
+.note{font-size:10px;color:#7899a6;margin-top:10px}
+@media(orientation:portrait){#task{width:52vw}.hud .metric:nth-child(n+3){display:none}nav button{font-size:10px;padding:5px 2px}}
+
+.flowdot{position:absolute;width:8px;height:8px;border-radius:50%;background:#6ee7ff;box-shadow:0 0 12px #6ee7ff;pointer-events:none;opacity:0}
+#classvote{position:absolute;left:50%;top:12px;transform:translateX(-50%);display:none;background:#081821ef;border:1px solid #315463;border-radius:14px;padding:9px 12px;font-size:11px;z-index:6}
+</style>
+</head>
+<body>
+<div id="intro"><div class="hero">
+<div class="sub">船舶轮机数字化实训 · 中文移动版</div>
+<h1>船舶离心泵 AI·3D 智能虚拟实训系统 FINAL · 单机版</h1>
+<p>首台教学数字样机依据 DESMI Modular S-N S70-50-175 N A02 的公开工程资料体系设计。FINAL 将结构认知、原厂零件图谱、透明/剖切/爆炸、自吸原理、运行仿真、性能实验、故障演化、随机挑战、虚拟检测、证据诊断、安全维修、拆装工艺、岗位任务、课堂互动、技能画像和综合考核整合为一个中文 iPhone 优先系统。</p>
+<button id="enterBtn" type="button">进入实训</button><div style="margin-top:10px;padding:8px 12px;border:1px solid #2f6677;border-radius:12px;color:#8fe6ff;font-size:13px">离线单机版 · 不需要账号 · 不需要网络 · 数据仅保存在当前设备会话</div>
+<div class="note">iPhone 横屏优先 · 单指旋转 · 双指缩放 · 中文全流程</div><div id="bootMsg" class="note" style="color:#ffc857"></div>
+</div></div>
+
+<div id="app">
+<header><div><div class="brand" onclick="finalDashboard()" style="cursor:pointer">船舶离心泵智能虚拟实训 · FINAL</div><div class="sub">S70-50-175 N A02 · FINAL · 单机离线完整交付版</div></div>
+<div class="status"><span class="pill"><i class="dot" id="runDot"></i><span id="runText">停机</span></span><span class="pill" id="score">100分</span></div></header>
+<main>
+<canvas id="c"></canvas>
+<div class="hud">
+<div class="metric"><small>出口压力</small><b id="pressure">0.00</b> MPa</div>
+<div class="metric"><small>流量</small><b id="flow">0.0</b> m³/h</div>
+<div class="metric"><small>振动</small><b id="vib">0.4</b> mm/s</div>
+<div class="metric"><small>轴承温度</small><b id="temp">25.0</b> ℃</div>
+</div>
+<section id="task"><h3>当前任务 <span onclick="provenance()" style="float:right;color:#8fdfff;cursor:pointer">数据依据</span></h3><p id="taskText">完成设备结构探索，然后启动离心泵并观察参数。</p></section>
+<div id="engbadge" style="position:absolute;right:10px;bottom:58px;background:#081821d9;border:1px solid #294958;border-radius:12px;padding:7px 9px;font-size:10px;color:#9dc2ce">
+<span style="color:#49d7a4">●</span> 厂家尺寸锚定：DN70吸入 / DN50排出
+</div>
+<div id="classvote">课堂预测：<span id="voteText">出口阀关小后，流量会怎样？</span></div><div id="toast"></div>
+
+<div id="modebar" style="position:absolute;left:10px;right:10px;bottom:10px;display:flex;gap:5px;justify-content:center;pointer-events:none">
+<span class="pill" style="pointer-events:auto" onclick="setMode('探索')">探索</span>
+<span class="pill" style="pointer-events:auto" onclick="setMode('训练')">训练</span>
+<span class="pill" style="pointer-events:auto" onclick="setMode('挑战')">挑战</span>
+<span class="pill" style="pointer-events:auto" onclick="autoDemo()">自动演示</span><span class="pill" style="pointer-events:auto" onclick="finalDashboard()">总控</span>
+</div>
+
+<div class="drawer" id="drawer"><button class="close" onclick="closeDrawer()">×</button><div id="drawerContent"></div></div>
+</main>
+<nav>
+<button onclick="panel('结构')">结构</button>
+<button onclick="panel('运行')">运行</button>
+<button onclick="panel('故障')">故障</button>
+<button onclick="panel('检测')">检测</button>
+<button onclick="panel('维修')">维修</button>
+<button onclick="panel('复盘')">复盘</button>
+</nav>
+</div>
+
+<script>
+const state={running:false,rpm:0,valve:100,fault:null,severity:0,evidence:[],score:100,repaired:false,exploded:0,transparent:false,selected:null,logs:[],mode:'探索',safety:{power:false,valves:false,pressure:false},repairStage:0,conf:60,demo:false,measureCount:0,measureLimit:99,predicts:0,procedureIndex:0,procedureErrors:0,procedureDone:[],cutaway:false,timeline:0,tool:null,quizTarget:null,quizCorrect:0,quizTotal:0,sessionStart:Date.now(),badges:[],mission:0};
+const parts=[
+ {id:'motor',name:'驱动电机',x:-2.8,y:.2,z:0,w:2.2,h:1.45,d:1.45,c:'#315967'},
+ {id:'coupling',name:'联轴器',x:-1.25,y:.15,z:0,w:.55,h:.65,d:.65,c:'#8a9ba1'},
+ {id:'bearing',name:'轴承座',x:-.55,y:.15,z:0,w:.8,h:.9,d:.9,c:'#526c74'},
+ {id:'casing',name:'泵体',x:.55,y:.2,z:0,w:1.75,h:1.85,d:1.55,c:'#366a77'},
+ {id:'impeller',name:'叶轮',x:.55,y:.2,z:0,w:.9,h:.9,d:.3,c:'#d49b48'},
+ {id:'seal',name:'机械密封',x:-.05,y:.2,z:0,w:.25,h:.65,d:.65,c:'#a9c2c9'},
+ {id:'suction',name:'吸入口',x:1.55,y:.2,z:0,w:1.1,h:.72,d:.72,c:'#2c5966'},
+ {id:'discharge',name:'排出口',x:.55,y:1.35,z:0,w:.72,h:1.0,d:.72,c:'#2c5966'},
+ {id:'checkflap',name:'止回阀瓣',x:1.62,y:.2,z:0,w:.18,h:.58,d:.58,c:'#bd8c4a'},
+ {id:'shaft',name:'泵轴',x:-.12,y:.2,z:0,w:1.9,h:.16,d:.16,c:'#a9b8bd'},
+ {id:'sealcover',name:'轴封盖',x:.12,y:.2,z:0,w:.16,h:.78,d:.78,c:'#6d858c'},
+ {id:'deflector',name:'挡水环',x:-.38,y:.2,z:0,w:.12,h:.55,d:.55,c:'#718a91'},
+ {id:'base',name:'公共底座',x:-.8,y:-.85,z:0,w:5.4,h:.25,d:1.8,c:'#263d46'}
+];
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+let yaw=-.35,pitch=.18,zoom=1,drag=false,lx=0,ly=0,pinch=0,raf;
+
+function resize(){const d=Math.min(devicePixelRatio||1,2);canvas.width=canvas.clientWidth*d;canvas.height=canvas.clientHeight*d;ctx.setTransform(d,0,0,d,0,0)}
+addEventListener('resize',resize);resize();
+
+function proj(x,y,z){
+ const cosy=Math.cos(yaw),siny=Math.sin(yaw),cosp=Math.cos(pitch),sinp=Math.sin(pitch);
+ let X=x*cosy-z*siny, Z=x*siny+z*cosy, Y=y*cosp-Z*sinp; Z=y*sinp+Z*cosp;
+ const s=70*zoom, cx=canvas.clientWidth/2, screenY=canvas.clientHeight*.57;
+ return [cx+X*s,screenY-Y*s,Z];
+}
+function box(p,alpha=1){
+ let ex=(state.exploded/100)*(p.id==='motor'?-1.7:p.id==='coupling'?-1:p.id==='bearing'?-0.5:p.id==='suction'?1.3:p.id==='discharge'?.8:p.id==='base'?0:.45);
+ let x=p.x+ex,y=p.y+(state.exploded/100)*(p.id==='discharge'?.7:0),z=p.z;
+ const pts=[[x-p.w/2,y-p.h/2,z-p.d/2],[x+p.w/2,y-p.h/2,z-p.d/2],[x+p.w/2,y+p.h/2,z-p.d/2],[x-p.w/2,y+p.h/2,z-p.d/2],
+ [x-p.w/2,y-p.h/2,z+p.d/2],[x+p.w/2,y-p.h/2,z+p.d/2],[x+p.w/2,y+p.h/2,z+p.d/2],[x-p.w/2,y+p.h/2,z+p.d/2]].map(q=>proj(...q));
+ const faces=[[0,1,2,3],[4,5,6,7],[0,1,5,4],[2,3,7,6],[1,2,6,5],[0,3,7,4]];
+ ctx.save();ctx.globalAlpha=alpha;ctx.lineWidth=1;ctx.strokeStyle=state.selected===p.id?'#8eeaff':'#19313b';
+ faces.sort((a,b)=>a.reduce((s,i)=>s+pts[i][2],0)-b.reduce((s,i)=>s+pts[i][2],0));
+ for(const f of faces){ctx.beginPath();f.forEach((i,k)=>k?ctx.lineTo(pts[i][0],pts[i][1]):ctx.moveTo(pts[i][0],pts[i][1]));ctx.closePath();ctx.fillStyle=p.c;ctx.fill();ctx.stroke()}
+ ctx.restore();
+}
+function draw(){
+ ctx.clearRect(0,0,canvas.clientWidth,canvas.clientHeight);
+ // floor
+ const g=ctx.createRadialGradient(canvas.clientWidth/2,canvas.clientHeight*.65,10,canvas.clientWidth/2,canvas.clientHeight*.65,canvas.clientWidth*.55);
+ g.addColorStop(0,'rgba(70,130,145,.18)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,0,canvas.clientWidth,canvas.clientHeight);
+ // pipe glow when running
+ if(state.running){let a=proj(2.05,.2,0),b=proj(3.2,.2,0);ctx.strokeStyle='rgba(91,216,255,.55)';ctx.lineWidth=9;ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke()}
+ const ordered=[...parts].sort((a,b)=>proj(a.x,a.y,a.z)[2]-proj(b.x,b.y,b.z)[2]);
+ for(const p of ordered){let alpha=(state.transparent&&p.id==='casing')?.22:1;box(p,alpha)}
+ 
+ // dynamic cutaway plane
+ if(state.cutaway){
+   let q=proj(.55,.2,.35);ctx.save();ctx.globalAlpha=.18;ctx.fillStyle='#9eeeff';
+   ctx.beginPath();ctx.ellipse(q[0],q[1],58*zoom,78*zoom,0,0,Math.PI*2);ctx.fill();ctx.restore();
+   let a=proj(-1.45,.2,0),b=proj(1.25,.2,0);ctx.strokeStyle='rgba(255,220,140,.8)';ctx.lineWidth=2;
+   ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();
+ }
+ // impeller rotational teaching graphic
+ if(state.running||state.transparent){
+   let p=parts.find(x=>x.id==='impeller');let ex=(state.exploded/100)*.45;let c=proj(p.x+ex,p.y,p.z);
+   ctx.save();ctx.translate(c[0],c[1]);ctx.rotate(performance.now()/1000*state.rpm/300);ctx.strokeStyle='#ffd27a';ctx.lineWidth=3;
+   for(let i=0;i<6;i++){ctx.rotate(Math.PI/3);ctx.beginPath();ctx.moveTo(0,0);ctx.quadraticCurveTo(18*zoom,-6*zoom,28*zoom,4*zoom);ctx.stroke()}ctx.restore();
+ }
+ 
+ // shaft centerline / engineering cue
+ let s1=proj(-1.6,.2,0),s2=proj(1.15,.2,0);
+ ctx.strokeStyle='rgba(200,230,235,.35)';ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(s1[0],s1[1]);ctx.lineTo(s2[0],s2[1]);ctx.stroke();ctx.setLineDash([]);
+ // fault visualizations: intentionally restrained and pedagogical
+ if(state.running && state.fault==='seal'){
+   let q=proj(.05,-.12,.25);ctx.fillStyle='rgba(80,190,255,.8)';
+   for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(q[0]+i*4,q[1]+18+(performance.now()/90+i*9)%18,3,0,Math.PI*2);ctx.fill()}
+ }
+ if(state.running && ['bearing','align','cav'].includes(state.fault)){
+   let q=proj(-.55,.2,0);let amp=(state.severity*3);
+   ctx.strokeStyle='rgba(255,200,87,.75)';ctx.strokeRect(q[0]-28+Math.sin(performance.now()/40)*amp,q[1]-28,56,56)
+ }
+ if(state.running && window.showFlow){
+   let a=proj(2.7,.2,0),b=proj(.55,.2,0),c=proj(.55,1.9,0);
+   ctx.strokeStyle='rgba(91,216,255,.75)';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.quadraticCurveTo(b[0]+45,b[1],b[0],b[1]);ctx.lineTo(c[0],c[1]);ctx.stroke();
+   for(let i=0;i<5;i++){let u=((performance.now()/900)+i/5)%1;let x=a[0]*(1-u)+b[0]*u,y=a[1]*(1-u)+b[1]*u;ctx.fillStyle='#a7efff';ctx.beginPath();ctx.arc(x,y,3,0,6.283);ctx.fill()}
+ }
+ raf=requestAnimationFrame(draw)
+}
+draw();
+
+function startApp(){document.getElementById('intro').style.display='none';log('进入实训');toast('已进入离心泵数字实训')}
+document.getElementById('enterBtn').addEventListener('click',startApp);
+window.addEventListener('error',function(e){
+ var m=document.getElementById('bootMsg');
+ if(m)m.textContent='程序启动错误：'+(e.message||'未知错误');
+});
+
+function toast(t){let e=document.getElementById('toast');e.textContent=t;e.style.opacity=1;setTimeout(()=>e.style.opacity=0,1600)}
+function log(t){state.logs.push({t:new Date().toLocaleTimeString('zh-CN',{hour12:false}),a:t})}
+function closeDrawer(){document.getElementById('drawer').classList.remove('open')}
+function show(html){document.getElementById('drawerContent').innerHTML=html;document.getElementById('drawer').classList.add('open')}
+function panel(k){
+ if(k==='结构')show(`<h2>结构探索 · 实物→内部→原理</h2><div class="grid">
+ <div class="card" onclick="toggleTrans()"><b>透明观察</b><p>显示叶轮与密封内部关系</p></div>
+ <div class="card" onclick="setExplode(100)"><b>完全分解</b><p>按装配轴线展开主要部件</p></div><div class="card" onclick="selfPrime()"><b>自吸原理</b><p>观察空气与液体混合排出过程</p></div><div class="card" onclick="autoDemo()"><b>产品演示</b><p>自动展示结构、运行、故障与维修</p></div>
+<div class="card" onclick="engineeringView()"><b>工程装配视图</b><p>按厂家装配清单显示关键零件</p></div>
+<div class="card" onclick="dimensionView()"><b>工程尺寸检查</b><p>查看接口、法兰与安装约束</p></div>
+<div class="card" onclick="cutawayView()"><b>动态剖切</b><p>半剖泵体并突出轴系/叶轮</p></div>
+<div class="card" onclick="immersive()"><b>沉浸展示</b><p>隐藏面板，适合课堂大屏</p></div>
+<div class="card" onclick="partsAtlas()"><b>原厂零件图谱</b><p>按官方编号学习结构</p></div>
+<div class="card" onclick="partQuiz()"><b>零件识别考核</b><p>随机抽取部件进行定位</p></div></div>
+ <p class="sub">连续爆炸</p><input class="slider" type="range" min="0" max="100" value="${state.exploded}" oninput="setExplode(this.value)">
+ <div class="grid" style="margin-top:8px">${parts.filter(p=>p.id!=='base').map(p=>`<div class="card" onclick="focusPart('${p.id}')"><b>${p.name}</b><p>点击定位并识别</p></div>`).join('')}</div>`);
+ if(k==='运行')show(`<h2>运行控制</h2><div class="row"><button class="btn" onclick="startPump()">启动设备</button><button class="btn" onclick="stopPump()">正常停机</button></div>
+ <p class="sub">出口阀开度：<span id="vv">${state.valve}</span>%</p><input class="slider" type="range" min="20" max="100" value="${state.valve}" oninput="state.valve=+this.value;document.getElementById('vv').textContent=this.value;log('调整出口阀至 '+this.value+'%')">
+ <div class="grid" style="margin-top:10px">
+<div class="card" onclick="performanceLab()"><b>性能曲线实验室</b><p>观察阀门开度与工作点</p></div>
+<div class="card" onclick="jobTask()"><b>轮机值班任务</b><p>按岗位情境完成巡检与处置</p></div>
+<div class="card" onclick="predictionGame()"><b>预测下一秒</b><p>冻结思考，再运行验证</p></div>
+<div class="card" onclick="flowView()"><b>流体路径</b><p>显示吸入→叶轮→排出教学流线</p></div></div>
+ <p class="note">厂家公开资料确认 70-50-175 位于 1450 rpm / 50 Hz 性能图范围；V3 数值仍标记为教学仿真，不把范围图反推值冒充单泵实测曲线。</p>`);
+ if(k==='故障')show(`<h2>故障注入 · 教师演示</h2><div class="grid">
+ ${[['cav','气蚀'],['block','吸入侧堵塞'],['bearing','轴承异常'],['seal','机械密封泄漏'],['align','联轴器不对中'],['wear','叶轮磨损']].map(x=>`<div class="card" onclick="fault('${x[0]}','${x[1]}')"><b>${x[1]}</b><p>隐藏注入并逐渐演化</p></div>`).join('')}</div>
+ <div class="grid" style="margin-top:8px"><button class="btn" onclick="randomChallenge()">随机隐藏故障</button><button class="btn" onclick="faultTimeline()">故障发展时间轴</button></div>
+ <p class="sub">故障严重度：<span id="ss">${Math.round(state.severity*100)}</span>%</p><input class="slider" type="range" min="10" max="100" value="${Math.max(10,state.severity*100)}" oninput="state.severity=this.value/100;document.getElementById('ss').textContent=this.value">`);
+ if(k==='检测')show(`<h2>虚拟检测</h2><div class="row" style="margin-bottom:8px"><button class="btn" onclick="selectTool('振动仪')">振动仪</button><button class="btn" onclick="selectTool('红外测温仪')">测温仪</button><button class="btn" onclick="selectTool('压力表')">压力</button><button class="btn" onclick="selectTool('流量计')">流量</button></div><p class="sub">检测次数：${state.measureCount}/${state.measureLimit===99?'不限':state.measureLimit} · 挑战模式强调“每一次检测都要有价值”。</p><div class="grid">
+ <div class="card" onclick="measure('pressure')"><b>压力检测</b><p>吸入/排出侧状态</p></div>
+ <div class="card" onclick="measure('vib')"><b>振动检测仪</b><p>驱动端轴承测点</p></div>
+ <div class="card" onclick="measure('temp')"><b>红外测温仪</b><p>轴承温度</p></div>
+ <div class="card" onclick="measure('flow')"><b>流量检测</b><p>获取当前流量</p></div></div>
+ <h2 style="margin-top:12px">诊断证据板</h2><div id="ev">${evidenceHTML()}</div>
+ <button class="btn" style="width:100%;margin-top:8px" onclick="diagnose()">提交故障判断</button>
+ <button class="btn" style="width:100%;margin-top:7px" onclick="reasoningMatrix()">故障鉴别矩阵</button>`);
+ if(k==='维修')show(`<h2>维修工作台 · 安全前置</h2><p class="sub">任何拆卸前必须完成停机、电源隔离、阀门隔离和泄压确认。</p>
+ <div class="grid">
+ <div class="card" onclick="safe('power')"><b>${state.safety.power?'✓':'①'} 电源隔离</b><p>停机并确认驱动源隔离</p></div>
+ <div class="card" onclick="safe('valves')"><b>${state.safety.valves?'✓':'②'} 阀门隔离</b><p>隔离吸入与排出侧</p></div>
+ <div class="card" onclick="safe('pressure')"><b>${state.safety.pressure?'✓':'③'} 泄压确认</b><p>确认泵体无残余压力</p></div>
+ <div class="card" onclick="repairStep('拆卸故障部件')"><b>④ 拆卸检查</b><p>安全条件满足后开放</p></div>
+ <div class="card" onclick="repairStep('修复或更换')"><b>⑤ 修复/更换</b><p>恢复故障部件状态</p></div>
+ <div class="card" onclick="finishRepair()"><b>⑥ 装配试车</b><p>重新装配并以运行结果验证</p></div>
+ <div class="card" onclick="procedureTrainer()"><b>拆装工艺训练</b><p>按官方维护逻辑完成顺序操作</p></div></div>`);
+ if(k==='复盘')show(`<h2>训练复盘</h2><div class="grid"><div class="card"><b>${state.score} 分</b><p>当前综合得分</p></div><div class="card"><b>${state.evidence.length} 条</b><p>有效诊断证据</p></div></div>
+ <div class="grid" style="margin-top:9px"><button class="btn" onclick="skillProfile()">技能画像</button><button class="btn" onclick="assessmentReport()">考核报告</button><button class="btn" onclick="guidedMission()">推进综合任务</button><button class="btn" onclick="provenance()">工程数据依据</button><button class="btn" onclick="saveOfflineProgress()">保存本机进度</button><button class="btn" onclick="loadOfflineProgress()">恢复本机进度</button></div>
+ <h2 style="margin-top:12px">黑匣子日志</h2>${state.logs.slice(-12).reverse().map(x=>`<div class="evidence"><span>${x.a}</span><span class="sub">${x.t}</span></div>`).join('')||'<p class="sub">暂无记录</p>'}`);
+}
+function setExplode(v){state.exploded=+v;log('结构分解 '+v+'%')}
+function toggleTrans(){state.transparent=!state.transparent;log(state.transparent?'开启透明观察':'关闭透明观察');toast(state.transparent?'泵体已透明：可观察叶轮':'已恢复实物外观')}
+function focusPart(id){state.selected=id;let p=parts.find(x=>x.id===id);toast('已定位：'+p.name);log('查看 '+p.name)}
+function startPump(){if(state.running)return toast('设备已在运行');state.running=true;state.rpm=1450;document.getElementById('runText').textContent='运行中';log('启动离心泵');document.getElementById('taskText').textContent='观察运行参数。可由教师注入隐藏故障，再使用检测工具诊断。';toast('启动完成：进入运行工况')}
+function stopPump(){state.running=false;state.rpm=0;document.getElementById('runText').textContent='停机';log('正常停机');toast('设备已停机')}
+function fault(id,name){if(!state.running){state.score-=3;syncScore();toast('请先启动设备');return}state.fault=id;state.severity=Math.max(.35,state.severity);state.repaired=false;log('教师注入隐藏故障：'+name);document.getElementById('taskText').textContent='⚠ 设备运行出现异常。请不要猜答案，使用检测工具收集证据。';closeDrawer();toast('已注入隐藏故障：学生端仅显示运行异常')}
+function measure(type){
+ if(state.measureCount>=state.measureLimit){state.score-=2;syncScore();return toast('检测次数已用完：请根据现有证据判断')}
+ if(!state.running){toast('设备未运行，无法获取运行测量');state.score-=2;syncScore();return}
+ state.measureCount++;
+ const expected={pressure:'压力表',flow:'流量计',vib:'振动仪',temp:'红外测温仪'};
+ if(state.tool && state.tool!==expected[type]){state.score-=2;syncScore();log('工具选择不匹配：'+state.tool+'→'+type);toast('工具与测量对象不匹配，已记录工艺扣分')}
+ let m=calc(), text='';
+ if(type==='pressure')text=`出口压力 ${m.p.toFixed(3)} MPa`;
+ if(type==='flow')text=`流量 ${m.q.toFixed(1)} m³/h`;
+ if(type==='vib')text=`驱动端振动 ${m.v.toFixed(1)} mm/s`;
+ if(type==='temp')text=`驱动端轴承温度 ${m.t.toFixed(1)} ℃`;
+ if(!state.evidence.includes(text))state.evidence.push(text);
+ log('检测：'+text);toast('证据已记录：'+text);let e=document.getElementById('ev');if(e)e.innerHTML=evidenceHTML()
+}
+function evidenceHTML(){return state.evidence.length?state.evidence.map(x=>`<div class="evidence"><span>✓ ${x}</span><span class="ok">已记录</span></div>`).join(''):'<p class="sub">尚未获得检测证据。</p>'}
+function diagnose(){
+ const map={cav:'气蚀',block:'吸入侧堵塞',bearing:'轴承异常',seal:'机械密封泄漏',align:'联轴器不对中',wear:'叶轮磨损'};
+ let opts=Object.entries(map).map(([k,v])=>`<button class="btn" onclick="submitDx('${k}','${v}')">${v}</button>`).join('');
+ show(`<h2>提交诊断</h2><p class="sub">请依据证据选择，不直接猜测。</p><div class="grid">${opts}</div><p class="sub">诊断置信度</p><div class="row"><button class="btn" onclick="state.conf=30">30%</button><button class="btn" onclick="state.conf=60">60%</button><button class="btn" onclick="state.conf=90">90%</button></div>`)
+}
+function submitDx(k,n){if(!state.fault){toast('当前未注入故障');return}if(k===state.fault){toast('诊断成立：现在必须用维修与试车证明');log('诊断正确：'+n+'，置信度 '+(state.conf||60)+'%');document.getElementById('taskText').textContent='诊断已形成。进入维修工作台完成处理，并通过试运行证明是否修复。'}else{state.score-=8;syncScore();toast('证据不足以支持该判断，请继续检测');log('诊断偏差：'+n)}closeDrawer()}
+function repairStep(s){
+ if(!state.fault)return toast('当前没有待维修故障');
+ if(s==='拆卸故障部件'){
+   if(!(state.safety.power&&state.safety.valves&&state.safety.pressure)){state.score-=6;syncScore();log('违规尝试拆卸');return toast('安全条件未满足：禁止拆卸')}
+   state.exploded=72;state.repairStage=1;log('维修：拆卸并检查故障部件');toast('拆卸检查完成 ✓')
+ }
+ if(s==='修复或更换'){
+   if(state.repairStage<1){state.score-=3;syncScore();return toast('请先完成拆卸检查')}
+   state.repaired=true;state.repairStage=2;log('维修：修复或更换故障部件');toast('故障部件状态已恢复 ✓')
+ }
+}
+function finishRepair(){
+ if(!state.fault)return toast('当前没有故障');
+ if(state.running){state.score-=5;syncScore();return toast('必须先停机隔离再装配')}
+ if(!(state.safety.power&&state.safety.valves&&state.safety.pressure)){state.score-=5;syncScore();return toast('安全隔离未完整确认')}
+ if(!state.repaired){state.score-=5;syncScore();return toast('尚未完成修复/更换')}
+ state.exploded=0;state.fault=null;state.severity=0;state.evidence=[];state.measureCount=0;state.repaired=false;state.repairStage=0;
+ state.safety={power:false,valves:false,pressure:false};state.valve=100;
+ log('完成装配，进入试运行验证');startPump();
+ document.getElementById('taskText').textContent='试运行验证：观察压力、流量、振动与温度是否恢复稳定。设备运行结果才是维修成功的最终证据。';
+ toast('装配完成：正在试运行')
+}
+function syncScore(){state.score=Math.max(0,state.score);document.getElementById('score').textContent=state.score+'分'}
+
+
+
+
+
+const proc=[
+ ['拆卸','接近叶轮','先获得叶轮区域的拆卸通道'],
+ ['拆卸','拆卸叶轮','按轴系方向移除叶轮相关件'],
+ ['拆卸','拆卸机械轴封','保护密封面，避免不必要损伤'],
+ ['拆卸','拆卸泵轴与轴承','完成旋转组件进一步解体'],
+ ['检查','检查磨损与损伤','检查叶轮、密封、轴承及相关接触面'],
+ ['装配','安装泵轴与轴承','按反向工艺恢复轴系'],
+ ['装配','安装挡水环/机械轴封','注意方向、清洁与密封面保护'],
+ ['装配','安装叶轮','恢复叶轮及紧固关系'],
+ ['装配','安装轴承座与轴封盖','完成主要结构复位'],
+ ['验证','手动检查与试运行','确认无卡滞后进入运行验证']
+];
+function procedureTrainer(){
+ if(state.running)return toast('拆装训练前必须停机');
+ show(`<h2>拆装工艺训练</h2>
+ <p class="sub">V6 将官方维护手册的主步骤转为教学序列。不同具体结构后缀的细节仍以对应原厂手册为准。</p>
+ <div class="card"><b>当前目标：${proc[state.procedureIndex]?.[1]||'全部完成'}</b><p>${proc[state.procedureIndex]?.[2]||'进入试运行验证。'}</p></div>
+ <div class="grid" style="margin-top:8px">
+ ${proc.map((x,i)=>`<div class="card" onclick="procStep(${i})"><b>${i+1}. ${x[1]}</b><p>${x[0]} · ${state.procedureDone.includes(i)?'✓ 已完成':'待操作'}</p></div>`).join('')}
+ </div>
+ <p class="sub">顺序错误：${state.procedureErrors} 次</p>`)
+}
+function procStep(i){
+ if(i!==state.procedureIndex){
+   state.procedureErrors++;state.score-=3;syncScore();log('拆装顺序错误：'+proc[i][1]);
+   toast('顺序不合理：先完成 '+proc[state.procedureIndex][1]);procedureTrainer();return
+ }
+ state.procedureDone.push(i);state.procedureIndex++;
+ if(i===0)state.exploded=20;
+ if(i===1)state.exploded=42;
+ if(i===2)state.exploded=58;
+ if(i===3)state.exploded=78;
+ if(i===4){state.repaired=true;toast('检查完成：故障件进入修复/更换状态')}
+ if(i>=5)state.exploded=Math.max(0,78-(i-4)*16);
+ if(i===9){state.exploded=0;state.repaired=true}
+ log('拆装工艺：'+proc[i][1]);toast('步骤完成：'+proc[i][1]);procedureTrainer()
+}
+function assessmentReport(){
+ const wrongDx=state.logs.filter(x=>x.a.includes('诊断偏差')).length;
+ const unsafe=state.logs.filter(x=>x.a.includes('违规')).length;
+ const valid=Math.min(100,60+state.evidence.length*8);
+ const procScore=Math.max(0,100-state.procedureErrors*10);
+ const total=Math.round((state.score+Math.max(0,100-wrongDx*15)+Math.max(0,100-unsafe*20)+valid+procScore)/5);
+ show(`<h2>综合考核报告</h2>
+ <div class="card"><b>综合评价：${total} 分</b><p>依据当前会话行为日志动态生成</p></div>
+ <div class="evidence"><span>安全规范</span><span>${Math.max(0,100-unsafe*20)}%</span></div>
+ <div class="evidence"><span>诊断准确性</span><span>${Math.max(0,100-wrongDx*15)}%</span></div>
+ <div class="evidence"><span>证据获取</span><span>${valid}%</span></div>
+ <div class="evidence"><span>拆装工艺</span><span>${procScore}%</span></div>
+ <div class="evidence"><span>检测次数</span><span>${state.measureCount} 次</span></div>
+ <p class="sub">该报告是教学形成性评价，不替代真实职业技能鉴定。</p>`)
+}
+
+
+
+const officialParts=[
+ [1,'泵体','Pump casing','承受流体并形成主要流道'],
+ [5,'叶轮','Impeller','将轴功传递给液体，是核心水力部件'],
+ [10,'机械轴封','Mechanical shaft seal','限制泵轴穿出处介质泄漏'],
+ [11,'挡水环','Water deflector','降低泄漏液体向轴承区域迁移的风险'],
+ [13,'滚珠轴承','Ball bearing','支承旋转轴系'],
+ [15,'滚珠轴承/轴承相关件','Ball bearing / bearing component','与轴系支承相关'],
+ [17,'泵轴','Shaft','连接驱动与叶轮并传递扭矩'],
+ [18,'轴承座','Bearing housing','定位并支承轴承系统'],
+ [20,'轴封盖','Shaft seal cover','机械密封区域的结构件'],
+ [23,'吸入件','Suction piece','连接吸入侧流道'],
+ [25,'止回阀瓣','Non-return flap','与自吸/防倒流功能相关'],
+ [31,'星形轮','Star wheel','自吸相关结构件'],
+ [33,'引水板','Priming plate','自吸相关结构件'],
+ [45,'U形管','U-pipe','特定自吸结构中的连接件'],
+ [75,'排放塞','Drain plug','用于排放/维护'],
+ [76,'泄压/安全阀','Relief / safety valve','用于压力保护相关功能']
+];
+
+function provenance(){
+ show(`<h2>工程数据与仿真来源</h2>
+ <div class="card"><b class="ok">厂家公开资料</b><p>目标型号：S70 50 175 N A02。DESMI 官方产品页列出 DWG / IGS / STP，并提供尺寸图、装配图、维护手册和泵曲线入口。</p></div>
+ <div class="card" style="margin-top:6px"><b class="ok">厂家结构依据</b><p>泵体、叶轮、机械轴封、轴承、泵轴、轴承座、轴封盖、吸入件、止回阀瓣等名称/装配关系来自 Modular S-N 公开资料体系。</p></div>
+ <div class="card" style="margin-top:6px"><b class="warn">教学仿真</b><p>当前压力、流量、振动、温度和故障演化公式用于课堂交互，不冒充该序列号泵的厂家实测数据。</p></div>
+ <div class="card" style="margin-top:6px"><b class="warn">3D几何状态</b><p>当前单文件版本使用程序化教学数字样机。官方 STP 文件下载地址已经定位，但本运行环境无法把 ZIP 内容直接注入交付文件，因此不把当前几何标注为“原厂CAD”。</p></div>`)
+}
+function finalDashboard(){
+ const mins=Math.max(1,Math.round((Date.now()-state.sessionStart)/60000));
+ show(`<h2>FINAL 教学控制中心</h2>
+ <div class="grid">
+ <div class="card" onclick="setMode('探索')"><b>01 结构探索</b><p>透明 · 剖切 · 爆炸 · 零件图谱</p></div>
+ <div class="card" onclick="selfPrime()"><b>02 原理演示</b><p>自吸 · 叶轮 · 流体路径</p></div>
+ <div class="card" onclick="performanceLab()"><b>03 运行实验</b><p>阀门 · 工作点 · 参数联动</p></div>
+ <div class="card" onclick="randomChallenge()"><b>04 故障诊断</b><p>隐藏故障 · 限次检测 · 证据板</p></div>
+ <div class="card" onclick="procedureTrainer()"><b>05 维修拆装</b><p>安全隔离 · 工艺顺序 · 试运行</p></div>
+ <div class="card" onclick="jobTask()"><b>06 岗位任务</b><p>轮机值班情境综合训练</p></div>
+ <div class="card" onclick="predictionGame()"><b>07 课堂互动</b><p>预测—验证，适合教师演示</p></div>
+ <div class="card" onclick="assessmentReport()"><b>08 考核复盘</b><p>技能画像 · 黑匣子 · 综合报告</p></div>
+ </div>
+ <p class="sub">本次训练约 ${mins} 分钟 · 当前得分 ${state.score} · 检测 ${state.measureCount} 次 · 零件识别 ${state.quizCorrect}/${state.quizTotal}</p>`)
+}
+function guidedMission(){
+ const missions=[
+ '任务1：打开结构模块，找到叶轮、泵轴和机械轴封。',
+ '任务2：开启透明/剖切，解释动力从电机到叶轮的传递路径。',
+ '任务3：启动设备，记录正常压力、流量、振动和温度基线。',
+ '任务4：进入随机隐藏故障，最多4次检测完成诊断。',
+ '任务5：执行安全隔离后，按拆装工艺完成维修。',
+ '任务6：重新试运行，并用数据证明设备是否恢复。',
+ '任务7：打开考核报告，完成个人复盘。'
+ ];
+ state.mission=(state.mission+1)%missions.length;
+ document.getElementById('taskText').textContent=missions[state.mission];
+ log('推进综合任务：'+missions[state.mission]);toast('综合任务已推进')
+}
+
+function partsAtlas(){
+ show(`<h2>DESMI 原厂零件编号图谱</h2>
+ <p class="sub">编号依据 DESMI Modular S-N 官方装配/备件资料。不同结构版本的个别名称与编号可能存在差异，教学中应对应具体图纸版本。</p>
+ <input id="ps" placeholder="搜索：叶轮 / 17 / seal..." oninput="filterParts(this.value)" style="width:100%;padding:10px;border-radius:10px;border:1px solid #315463;background:#0b202a;color:white;margin-bottom:8px">
+ <div id="partsList">${partsListHTML('')}</div>`)
+}
+function partsListHTML(q){
+ q=(q||'').toLowerCase();
+ return officialParts.filter(p=>p.join(' ').toLowerCase().includes(q)).map(p=>
+ `<div class="card" style="margin-bottom:6px" onclick="atlasFocus(${p[0]},'${p[1]}')"><b>POS. ${p[0]} · ${p[1]}</b><p>${p[2]} · ${p[3]}</p></div>`).join('')||'<p class="sub">没有匹配项</p>'
+}
+function filterParts(q){let e=document.getElementById('partsList');if(e)e.innerHTML=partsListHTML(q)}
+function atlasFocus(no,name){
+ const map={1:'casing',5:'impeller',10:'seal',11:'deflector',13:'bearing',17:'shaft',18:'bearing',20:'sealcover',23:'suction',25:'checkflap'};
+ if(map[no]){state.selected=map[no];state.transparent=true}
+ log('查看原厂零件 POS.'+no+' '+name);closeDrawer();toast('POS.'+no+' · '+name)
+}
+function partQuiz(){
+ const candidates=[[1,'泵体','casing'],[5,'叶轮','impeller'],[10,'机械轴封','seal'],[11,'挡水环','deflector'],[17,'泵轴','shaft'],[18,'轴承座','bearing'],[20,'轴封盖','sealcover'],[23,'吸入件','suction'],[25,'止回阀瓣','checkflap']];
+ let x=candidates[Math.floor(Math.random()*candidates.length)];
+ state.quizTarget=x;state.quizTotal++;state.transparent=true;state.exploded=45;
+ show(`<h2>零件识别考核</h2><div class="card"><b>请定位：POS.${x[0]} ${x[1]}</b><p>根据结构关系选择对应部件。错误选择会扣分。</p></div>
+ <div class="grid" style="margin-top:8px">${candidates.sort(()=>Math.random()-.5).map(p=>`<div class="card" onclick="answerPart('${p[2]}','${p[1]}')"><b>${p[1]}</b><p>选择该部件</p></div>`).join('')}</div>
+ <p class="sub">当前正确：${state.quizCorrect}/${state.quizTotal-1}</p>`)
+}
+function answerPart(id,name){
+ if(!state.quizTarget)return;
+ if(id===state.quizTarget[2]){state.quizCorrect++;state.selected=id;log('零件识别正确：'+name);toast('识别正确 ✓');setTimeout(partQuiz,500)}
+ else{state.score-=3;syncScore();log('零件识别错误：'+name);toast('不正确：观察轴线、流道与装配位置后再判断')}
+}
+
+function cutawayView(){
+ state.cutaway=!state.cutaway;state.transparent=state.cutaway;state.selected=state.cutaway?'impeller':null;
+ document.getElementById('taskText').textContent=state.cutaway?'动态剖切：泵体弱化，重点观察叶轮、泵轴、机械轴封、轴承座沿轴线的结构关系。':'已退出剖切观察。';
+ log(state.cutaway?'开启动态剖切':'关闭动态剖切');closeDrawer();toast(state.cutaway?'剖切视图已开启':'已恢复完整外观')
+}
+function immersive(){
+ closeDrawer();let h=document.querySelector('header'),n=document.querySelector('nav'),m=document.getElementById('modebar'),task=document.getElementById('task'),hud=document.querySelector('.hud');
+ let on=h.style.display!=='none';
+ [h,n,m,task,hud].forEach(x=>x.style.display=on?'none':'');
+ toast(on?'已进入沉浸展示：再次从结构菜单退出':'已退出沉浸展示')
+}
+function selectTool(name){state.tool=name;log('选择检测工具：'+name);toast('当前工具：'+name)}
+function faultTimeline(){
+ if(!state.fault){toast('先注入一个故障再观察发展');return}
+ show(`<h2>故障发展时间轴</h2><p class="sub">拖动时间，观察故障从轻微到严重时多个参数如何共同变化。</p>
+ <input class="slider" type="range" min="0" max="100" value="${Math.round(state.severity*100)}" oninput="timelineSet(this.value)">
+ <div class="grid"><div class="card"><b>0–30%</b><p>早期异常：线索弱，适合训练基线比较</p></div><div class="card"><b>30–70%</b><p>参数趋势逐渐明显，多证据开始收敛</p></div><div class="card"><b>70–100%</b><p>严重异常：振动/压力/流量等后果更突出</p></div></div>
+ <p class="note">时间轴表示教学故障演化程度，不代表所有真实故障都按固定时间线性发展。</p>`)
+}
+function timelineSet(v){
+ state.timeline=+v;state.severity=Math.max(.01,+v/100);
+ let m=calc();document.getElementById('taskText').textContent=`故障演化 ${v}%：出口压力 ${m.p.toFixed(2)} MPa，流量 ${m.q.toFixed(1)} m³/h，振动 ${m.v.toFixed(1)} mm/s。`;
+}
+
+function flowView(){
+ window.showFlow=!window.showFlow;state.transparent=window.showFlow;
+ log(window.showFlow?'开启流体路径':'关闭流体路径');
+ closeDrawer();toast(window.showFlow?'已显示教学流体路径':'流体路径已关闭')
+}
+function randomChallenge(){
+ const fs=[['cav','气蚀'],['block','吸入侧堵塞'],['bearing','轴承异常'],['seal','机械密封泄漏'],['align','联轴器不对中'],['wear','叶轮磨损']];
+ const f=fs[Math.floor(Math.random()*fs.length)];
+ if(!state.running)startPump();
+ state.fault=f[0];state.severity=.45+Math.random()*.35;state.measureCount=0;state.measureLimit=4;state.evidence=[];state.repaired=false;
+ document.getElementById('taskText').textContent='隐藏故障挑战：最多4次检测。请先观察，再选择最有信息价值的测点。';
+ log('开始随机隐藏故障挑战（答案已隐藏）');closeDrawer();toast('故障已隐藏注入：你有4次检测机会')
+}
+function predictionGame(){
+ document.getElementById('classvote').style.display='block';
+ show(`<h2>预测下一秒</h2><p class="sub">先预测，再改变工况验证。课堂上可让全班先举手/投票。</p>
+ <div class="grid">
+ <div class="card" onclick="submitPrediction('流量上升')"><b>流量上升</b><p>选择后系统验证</p></div>
+ <div class="card" onclick="submitPrediction('流量下降')"><b>流量下降</b><p>选择后系统验证</p></div>
+ <div class="card" onclick="submitPrediction('基本不变')"><b>基本不变</b><p>选择后系统验证</p></div>
+ <div class="card" onclick="submitPrediction('压力下降')"><b>出口压力下降</b><p>选择后系统验证</p></div></div>`)
+}
+function submitPrediction(a){
+ state.predicts++;let correct=a==='流量下降';
+ if(correct){toast('预测成立：现在关小出口阀验证');state.score=Math.min(100,state.score+1)}
+ else{state.score-=2;toast('先不要记答案：用运行结果验证你的预测')}
+ state.valve=45;syncScore();log('课堂预测：'+a+(correct?'（方向正确）':'（待纠正）'));
+ document.getElementById('classvote').style.display='none';closeDrawer()
+}
+
+function dimensionView(){
+ show(`<h2>工程尺寸检查</h2>
+ <p class="sub">以下数值来自 DESMI 公开的 S70-50-175N 尺寸资料，用于安装认知；不同结构后缀/驱动配置仍应以对应原厂图纸为准。</p>
+ <div class="grid">
+ <div class="card"><b>吸入口 DN70</b><p>法兰外径 D1 = 185 mm<br>螺栓圆 k1 = 145 mm<br>4 × Ø18</p></div>
+ <div class="card"><b>排出口 DN50</b><p>法兰外径 D2 = 165 mm<br>螺栓圆 k2 = 125 mm<br>4 × Ø18</p></div>
+ <div class="card"><b>轴径</b><p>d = 24 j6<br>键槽相关尺寸 h=27 / b=8 mm</p></div>
+ <div class="card"><b>安装认知</b><p>轴中心线应保持水平；基础应坚固、平整。</p></div>
+ </div>
+ <div class="card" style="margin-top:8px"><b>安装挑战</b><p>如果管路强行拉拽泵法兰，会把外力传递到泵体和轴系。正式实训中应检查管路支撑、法兰对中和基础状态。</p></div>`)
+}
+function jobTask(){
+ state.mode='训练';state.score=100;state.evidence=[];state.fault=null;state.severity=0;state.procedureIndex=0;state.procedureErrors=0;state.procedureDone=[];
+ document.getElementById('taskText').textContent='轮机值班任务：①检查设备与阀门状态 ②启动泵 ③记录基线 ④系统将随机出现异常 ⑤限定证据完成诊断 ⑥安全维修并试运行。';
+ log('开始轮机值班岗位任务');closeDrawer();toast('岗位任务已下达')
+ setTimeout(()=>{if(!state.running)toast('提示：先完成设备启动')},1800)
+}
+function skillProfile(){
+ let diag=Math.max(45,100-(state.logs.filter(x=>x.a.includes('诊断偏差')).length*15));
+ let safety=Math.max(40,100-(state.logs.filter(x=>x.a.includes('违规')).length*20));
+ let eff=Math.max(45,100-Math.max(0,state.evidence.length-4)*6);
+ let repair=state.logs.some(x=>x.a.includes('完成装配'))?95:65;
+ let recognition=state.quizTotal?Math.round(state.quizCorrect/state.quizTotal*100):60;
+ show(`<h2>学生技能画像</h2>
+ ${[['安全操作',safety],['诊断逻辑',diag],['检测效率',eff],['维修验证',repair],['零件识别',recognition]].map(x=>`<div style="margin:9px 0"><div class="row" style="justify-content:space-between"><b>${x[0]}</b><span>${x[1]}%</span></div><div style="height:7px;background:#132a34;border-radius:8px;overflow:hidden"><div style="height:100%;width:${x[1]}%;background:#5bd8ff"></div></div></div>`).join('')}
+ <p class="sub">V4画像依据当前会话操作日志生成，用于教学反馈，不等同于正式职业技能鉴定。</p>`)
+}
+
+function engineeringView(){
+ state.transparent=true;state.exploded=55;
+ document.getElementById('taskText').textContent='工程装配视图：重点观察泵体、叶轮、机械轴封、滚珠轴承、泵轴、轴承座、轴封盖、吸入件与止回阀瓣之间的关系；安装时还要避免管路载荷使泵体产生变形。';
+ log('进入工程装配视图');closeDrawer();toast('工程装配视图已开启')
+}
+function performanceLab(){
+ let m=calc();
+ show(`<h2>性能曲线实验室</h2>
+ <p class="sub">厂家公开的 1450 rpm / 50 Hz 性能范围图包含 70-50-175。这里用教学模型演示“工作点随系统阻力改变”的概念，不伪造单台泵精确厂家曲线。</p>
+ <div class="card"><b>当前教学工作点</b><p>阀门 ${state.valve}% · 流量 ${m.q.toFixed(1)} m³/h · 出口压力 ${m.p.toFixed(3)} MPa</p></div>
+ <p class="sub">拖动出口阀，观察工作点变化</p>
+ <input class="slider" type="range" min="20" max="100" value="${state.valve}" oninput="state.valve=+this.value;performanceLab()">
+ <div style="height:140px;position:relative;border:1px solid #244653;border-radius:12px;margin-top:8px;background:linear-gradient(180deg,#102a34,#091820)">
+   <div style="position:absolute;left:12px;top:10px;font-size:10px;color:#8fb0bd">扬程/压力 ↑</div>
+   <svg viewBox="0 0 300 120" width="100%" height="100%">
+    <path d="M20 25 C85 30,170 50,280 100" fill="none" stroke="#5bd8ff" stroke-width="3"/>
+    <path d="M25 105 C105 95,180 68,275 28" fill="none" stroke="#ffc857" stroke-width="2" stroke-dasharray="5 5"/>
+    <circle cx="${55+state.valve*1.8}" cy="${95-state.valve*.55}" r="5" fill="#49d7a4"/>
+   </svg>
+   <div style="position:absolute;right:12px;bottom:7px;font-size:10px;color:#8fb0bd">流量 →</div>
+ </div>`)
+}
+function reasoningMatrix(){
+ const rows=[
+ ['气蚀','流量↓','压力波动','振动↑↑','温度轻升','吸入条件'],
+ ['吸入堵塞','流量↓↓','出口压力↓','振动↑','温度≈','吸入侧'],
+ ['轴承异常','流量≈','压力≈','振动↑↑','温度↑↑','轴承测点'],
+ ['密封泄漏','流量轻变','压力轻降','振动轻升','温度≈','密封处'],
+ ['不对中','流量≈','压力≈','振动↑↑','温度↑','联轴器/轴承'],
+ ['叶轮磨损','流量↓','压力↓','振动轻升','温度≈','性能退化']
+ ];
+ show(`<h2>故障鉴别矩阵</h2><p class="sub">用于训练“现象不能单独定故障”的思维。高级考核模式可隐藏此表。</p>
+ ${rows.map(r=>`<div class="card" style="margin-bottom:6px"><b>${r[0]}</b><p>${r.slice(1).join(' · ')}</p></div>`).join('')}`)
+}
+
+function setMode(m){
+ state.mode=m; log('切换学习模式：'+m);
+ if(m==='探索'){state.measureLimit=99;state.measureCount=0;state.score=100;document.getElementById('taskText').textContent='自由观察设备结构，尝试透明、爆炸与自吸原理演示。'}
+ if(m==='训练'){state.measureLimit=99;state.measureCount=0;document.getElementById('taskText').textContent='完成启动、检测、诊断、维修和试运行。允许查看提示。'}
+ if(m==='挑战'){state.measureCount=0;state.measureLimit=4;document.getElementById('taskText').textContent='挑战模式：隐藏故障名称，最多4次检测，关注诊断效率。'; if(!state.running)startPump();}
+ syncScore();toast('已切换：'+m+'模式')
+}
+function safe(k){
+ if(k==='power'){stopPump();state.safety.power=true}
+ if(k==='valves'){state.safety.valves=true;state.valve=20}
+ if(k==='pressure'){
+   if(!state.safety.power||!state.safety.valves){state.score-=4;syncScore();return toast('先完成停机/电源隔离和阀门隔离')}
+   state.safety.pressure=true
+ }
+ log('安全确认：'+k);toast('安全步骤已确认');panel('维修')
+}
+function selfPrime(){
+ state.transparent=true;state.selected='casing';closeDrawer();
+ document.getElementById('taskText').textContent='自吸教学：观察泵体内部。Modular S 的自吸原理允许泵处理空气与液体混合物并排出吸入管内空气。';
+ log('查看自吸工作原理');toast('已进入自吸原理可视化')
+}
+async function autoDemo(){
+ if(state.demo)return;state.demo=true;closeDrawer();setMode('探索');
+ const wait=ms=>new Promise(r=>setTimeout(r,ms));
+ toast('自动演示开始');state.transparent=false;state.exploded=0;
+ await wait(900);state.transparent=true;document.getElementById('taskText').textContent='第一幕：透明观察泵体内部结构。';
+ await wait(1300);state.exploded=72;document.getElementById('taskText').textContent='第二幕：主要部件沿装配关系展开。';
+ await wait(1500);state.exploded=0;state.transparent=true;startPump();document.getElementById('taskText').textContent='第三幕：设备恢复装配并进入运行工况。';
+ await wait(1600);state.fault='cav';state.severity=.68;document.getElementById('taskText').textContent='第四幕：隐藏注入气蚀教学故障，观察参数和振动变化。';
+ await wait(1800);measure('pressure');measure('vib');measure('flow');
+ document.getElementById('taskText').textContent='第五幕：通过检测获得证据，而不是直接公布故障答案。';
+ await wait(1800);state.demo=false;toast('自动演示结束，可立即手动接管')
+}
+
+function calc(){
+ let baseQ=52*(state.valve/100),p=.28+.07*(1-state.valve/100),v=.8,t=42;
+ let s=state.fault?state.severity:0;
+ if(state.fault==='cav'){baseQ*=1-.25*s;p-=.05*s;v+=6*s;t+=5*s}
+ if(state.fault==='block'){baseQ*=1-.45*s;p-=.08*s;v+=2.5*s}
+ if(state.fault==='bearing'){v+=8*s;t+=35*s}
+ if(state.fault==='seal'){p-=.03*s;v+=1*s}
+ if(state.fault==='align'){v+=7*s;t+=18*s}
+ if(state.fault==='wear'){baseQ*=1-.3*s;p-=.07*s;v+=1.2*s}
+ let n=(Math.sin(performance.now()/550)+Math.sin(performance.now()/230))*0.5;
+ return {q:state.running?Math.max(0,baseQ+n*.35):0,p:state.running?Math.max(0,p+n*.002):0,v:state.running?Math.max(.2,v+n*.15):.4,t:state.running?t+n*.25:25};
+}
+setInterval(()=>{let m=calc();pressure.textContent=m.p.toFixed(2);flow.textContent=m.q.toFixed(1);vib.textContent=m.v.toFixed(1);temp.textContent=m.t.toFixed(1);
+ let abnormal=state.running&&state.fault;runDot.style.background=abnormal?'var(--warn)':state.running?'var(--ok)':'#789';runDot.style.boxShadow=abnormal?'0 0 12px var(--warn)':'0 0 12px currentColor'},250);
+
+// touch/mouse orbit
+canvas.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;canvas.setPointerCapture(e.pointerId)});
+canvas.addEventListener('pointermove',e=>{if(!drag)return;yaw+=(e.clientX-lx)*.007;pitch=Math.max(-.45,Math.min(.55,pitch+(e.clientY-ly)*.005));lx=e.clientX;ly=e.clientY});
+canvas.addEventListener('pointerup',()=>drag=false);
+canvas.addEventListener('wheel',e=>{zoom=Math.max(.55,Math.min(1.8,zoom-e.deltaY*.001));e.preventDefault()},{passive:false});
+let touches={};
+canvas.addEventListener('touchstart',e=>{if(e.touches.length===2)pinch=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY)},{passive:true});
+canvas.addEventListener('touchmove',e=>{if(e.touches.length===2){let d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);if(pinch)zoom=Math.max(.55,Math.min(1.8,zoom*d/pinch));pinch=d}},{passive:true});
+
+function saveOfflineProgress(){
+  try{
+    localStorage.setItem('marinePumpFinalOffline', JSON.stringify(state));
+    toast('本机训练进度已保存');
+  }catch(e){toast('当前浏览器限制本机保存，但本次训练仍可继续')}
+}
+function loadOfflineProgress(){
+  try{
+    const s=localStorage.getItem('marinePumpFinalOffline');
+    if(!s){toast('本机暂无已保存进度');return}
+    Object.assign(state,JSON.parse(s)); syncScore(); toast('已恢复本机训练进度');
+  }catch(e){toast('恢复进度失败')}
+}
+function clearOfflineProgress(){
+  try{localStorage.removeItem('marinePumpFinalOffline');toast('本机进度已清除')}catch(e){}
+}
+
+</script>
+</body></html>
